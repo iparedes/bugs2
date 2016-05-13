@@ -25,6 +25,7 @@ class world:
         self.newborns=[] # Newborns during the cycle
         self.graveyard=[] # Dead bugs
 
+        self.sowratevalues=[0.0001,0.001,0.01,0.1,1,2,5,10,50,100]
         self.sowrate=SOWRATE
 
 

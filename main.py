@@ -1,15 +1,24 @@
 __author__ = 'nacho'
 
 import sys
+import logging
 import pygame, os
 from pygame.locals import *
 from ocempgui.draw import Draw
 from ocempgui.widgets import *
 from ocempgui.widgets.Constants import *
+from operator import attrgetter
 
 import bug
 import world
 from constants import *
+
+logger = logging.getLogger('bugs')
+hdlr=logging.FileHandler('./bugs.log')
+formatter = logging.Formatter('%(asctime)s - %(module)s - %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.DEBUG)
 
 class GUI:
     def __init__(self):
@@ -26,6 +35,8 @@ class GUI:
         self.STEP=False
         # Shows the map
         self.SCREEN=True
+        # Selected bug
+        self.SELECTEDBUG=None
 
         l=self.preload('./prog')
         B=bug.bug()
@@ -46,12 +57,46 @@ class GUI:
             if self.STEP:
                 self.STEP=False
 
+            self.label_cycle.set_text("Cycle: "+str(self.W.cycles))
+            self.label_bugs.set_text("Bugs: "+str(len(self.W.habs)))
+
+            if self.SELECTEDBUG!=None and self.SELECTEDBUG in self.W.habs:
+                bicho=self.W.habs[self.SELECTEDBUG].bug
+                self.label_bugid.set_text("Bug Id: "+bicho.id)
+                self.label_bugage.set_text("Age: "+str(bicho.age))
+                self.label_bugenergy.set_text("Energy: "+str(bicho.energy()))
+                self.label_buginstr.set_text(bicho.last_executed)
+            else:
+                self.label_bugid.set_text("Bug Id: ")
+                self.label_bugage.set_text("Age: ")
+                self.label_bugenergy.set_text("Energy: ")
+                self.label_buginstr.set_text("")
+
             self.screen.blit(self.re.screen,self.re.topleft)
             pygame.display.update()
+
+        L=self.W.graveyard
+        M=[x.bug for x in self.W.habs.values()]
+        N=L+M
+        totpop=len(N)
+        print "The world ended at "+str(self.W.cycles)+" cycles."
+        print "A total of "+str(totpop)+" bugs lived during this time."
+        if totpop>0:
+            oldest=max(L+M,key=attrgetter('age'))
+            print "Oldest bug:"
+            print "Id: "+oldest.id
+            print "Age: "+str(oldest.age)
+            print "Maxpop: "+str(self.W.maxpop)
+            l=oldest.decompile()
+            print l
 
 
     def go_gui(self):
         pygame.init()
+
+        base.GlobalStyle.styles["default"]["font"]["name"] = "calibrib.ttf"
+        base.GlobalStyle.styles["default"]["font"]["size"] = 14
+
         # Main Window
         self.screen=pygame.display.set_mode((WINWIDTH,WINHEIGHT))
         self.screen.fill((100,100,100))
@@ -63,15 +108,26 @@ class GUI:
         self.re.topleft=(0,0)
         self.re.color=100,100,100
 
-        # Right frame contains the controls
-        frright=VFrame()
-        frright.border=BORDER_RAISED
-        frright.align=ALIGN_TOP
+        # Subframe with vertical scrollbar
+        frvbar=VFrame()
+        frvbar.align=ALIGN_TOP
+        frvbar.set_border(BORDER_NONE)
+        self.vscroll=VScrollBar(MAPHEIGHT,(MAPHEIGHT+BOARDSIZE-TILESHEIGHT))
+        self.vscroll.connect_signal(SIG_VALCHANGED,self._vscroll_change)
+        frvbar.add_child(self.vscroll)
+        frvbar.topleft=(MAPWIDTH,0)
+        #hscroll.topleft=(0,MAPHEIGHT)
+
+        #frright.add_child(frvbar)
+        self.re.add_widget(frvbar)
+
+        frcontrols=VFrame()
+        frcontrols.align=ALIGN_TOP
 
         # Subframe with buttons
         frplay=HFrame()
         frplay.align=ALIGN_LEFT
-        frright.minsize=CONTROLWIDTH,CONTROLHEIGHT
+
 
         self.btn_play=ImageButton("./images/play.png")
         self.btn_play.connect_signal(SIG_CLICKED,self._toggle_pause)
@@ -94,16 +150,37 @@ class GUI:
         frstatus.add_child(self.label_cycle)
         frstatus.add_child(self.label_bugs)
 
-        frright.add_child(frplay)
-        frright.add_child(frstatus)
-        frright.topleft=(MAPWIDTH,0)
+        # Frame with selected bug info
+        frselbug=VFrame()
+        frselbug.align=ALIGN_TOP
+
+        self.label_bugid=Label("Bug Id: ")
+        self.label_bugage=Label("Age: ")
+        self.label_bugenergy=Label("Energy: ")
+        self.label_buginstr=Label("")
+        frselbug.children=self.label_bugid,self.label_bugage,self.label_bugenergy,self.label_buginstr
+
+        frcontrols.add_child(frplay)
+        frcontrols.add_child(frstatus)
+        frcontrols.add_child(frselbug)
+
+
+        # Right frame contains the controls
+        frright=HFrame()
+        frright.border=BORDER_NONE
+        frright.align=ALIGN_TOP
+        frright.topleft=(MAPWIDTH+frvbar.width,0)
+        frright.minsize=CONTROLWIDTH,CONTROLHEIGHT
+
+        frright.add_child(frcontrols)
 
         self.re.add_widget(frright)
 
+        # Horizontal scroll bar
         frhbar=HFrame()
         frhbar.align=ALIGN_LEFT
         frhbar.set_border(BORDER_NONE)
-        self.hscroll=HScrollBar(MAPWIDTH,(MAPWIDTH-TILESWIDTH)+MAPWIDTH)
+        self.hscroll=HScrollBar(MAPWIDTH,(MAPWIDTH+BOARDSIZE-TILESWIDTH))
         self.hscroll.connect_signal(SIG_VALCHANGED,self._hscroll_change)
         frhbar.add_child(self.hscroll)
         frhbar.topleft=(0,MAPHEIGHT)
@@ -114,16 +191,6 @@ class GUI:
         pygame.display.flip()
 
 
-        # #hscroll=HScrollBar(BOARDSIZE-TILESWIDTH,BOARDSIZE-TILESWIDTH)
-        # #self.screen.blit(self.re.screen,self.re.topleft)
-        #
-        # # Draws the controls surface
-        # self.re.topleft=0,0
-        # self.screen.blit(self.re.screen,(0,0))
-        # #pygame.draw.rect(self.screen,(0,255,0),(0,0,50,50))
-        # #pygame.display.flip()
-        #
-        # #self.re.start()
 
     def draw_board(self):
         f1=self.coords[0]
@@ -168,10 +235,13 @@ class GUI:
                 if (x<MAPHEIGHT) and (y<MAPWIDTH):
                     mx=x/TILESIZE
                     my=y/TILESIZE
+                    mx+=self.coords[1]
+                    my+=self.coords[0]
                     cell=self.W.board.cell((mx,my))
                     if cell.is_hab():
                         id=cell.hab
                         for ident in id:
+                            self.SELECTEDBUG=ident
                             l=self.W.habs[ident].bug.decompile()
                             print "================="
                             for i in l:
@@ -206,8 +276,17 @@ class GUI:
         self.TERMINATE=True
 
     def _hscroll_change(self):
+        v=int(self.hscroll.value)
+        #print v
+        c=(v,self.coords[1])
+        self.coords=c
 
-        c=(int(self.hscroll.value),self.coords[1])
+        self.draw_board()
+
+    def _vscroll_change(self):
+        v=int(self.vscroll.value)
+        #print v
+        c=(self.coords[0],v)
         self.coords=c
         self.draw_board()
 

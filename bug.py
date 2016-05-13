@@ -27,6 +27,8 @@ class bug:
         self._registers[DIET]=HERB
         self._registers[SHRE]=SHARENERGY
 
+        self.last_executed=""
+
 
 
     def copy(self,energy):
@@ -445,6 +447,7 @@ class bug:
             'JNZ':    self._opcode_JNZ,
         }.get(op,self._opcode_NOP)
         oper()
+        self.last_executed=str(op)
         logger.debug(self.id+'('+str(self._registers[ENER])+') '+str(op))
         self._registers[ENER]-=1
         # Age is controlled by the world
