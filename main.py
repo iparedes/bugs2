@@ -125,6 +125,8 @@ class GUI:
             #self.screen.blit(self.screen, (0,0))
             # Redraws widgets
             self.screen.blit(self.re.screen,(MAPWIDTH,0))
+            # WATCH HERE
+            # Maybe we could make the renderer surface the same size than the window and use just one...
             self.screen.blit(self.rehscroll.screen,(0,MAPHEIGHT))
 
             #pygame.display.flip()
@@ -154,6 +156,8 @@ class GUI:
                                 print i
                             print "================="
                     print str(mx)+","+str(my)
+
+        # WATCH HERE
         self.rehscroll.distribute_events(*events)
         self.re.distribute_events(*events)
 
