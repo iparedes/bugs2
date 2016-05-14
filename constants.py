@@ -72,8 +72,8 @@ BOARDSIZE=200
 # Food per cell
 FOODPACK=10
 
-# Per thousand of cells growing food per cycle
-SOWRATE=1
+# Index in the sowratevalues of initial sowrate
+SOWRATE=4
 
 MUTRATE=1 # percentage
 STDDEV=10 # percentage

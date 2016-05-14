@@ -61,15 +61,19 @@ class GUI:
             self.label_bugs.set_text("Bugs: "+str(len(self.W.habs)))
 
             if self.SELECTEDBUG!=None and self.SELECTEDBUG in self.W.habs:
-                bicho=self.W.habs[self.SELECTEDBUG].bug
+                hab=self.W.habs[self.SELECTEDBUG]
+                bicho=hab.bug
+                pos=hab.pos
                 self.label_bugid.set_text("Bug Id: "+bicho.id)
                 self.label_bugage.set_text("Age: "+str(bicho.age))
                 self.label_bugenergy.set_text("Energy: "+str(bicho.energy()))
+                self.label_bugpos.set_text("("+str(pos[0])+","+str(pos[1])+")")
                 self.label_buginstr.set_text(bicho.last_executed)
             else:
                 self.label_bugid.set_text("Bug Id: ")
                 self.label_bugage.set_text("Age: ")
                 self.label_bugenergy.set_text("Energy: ")
+                self.label_bugpos.set_text("")
                 self.label_buginstr.set_text("")
 
             self.screen.blit(self.re.screen,self.re.topleft)
@@ -157,12 +161,25 @@ class GUI:
         self.label_bugid=Label("Bug Id: ")
         self.label_bugage=Label("Age: ")
         self.label_bugenergy=Label("Energy: ")
+        self.label_bugpos=Label("")
         self.label_buginstr=Label("")
-        frselbug.children=self.label_bugid,self.label_bugage,self.label_bugenergy,self.label_buginstr
+        frselbug.children=self.label_bugid,self.label_bugage,self.label_bugenergy,self.label_bugpos,self.label_buginstr
+
+        # Frame with other controls
+        frother=VFrame(Label("Sow Rate"))
+        frother.align=ALIGN_TOP
+
+        # Slider
+        self.sowslider=HScale(0,len(self.W.sowratevalues)-1)
+        self.sowslider.connect_signal (SIG_VALCHANGED, self._update_sowrate,)
+        # Sets the initial position of the slider
+        self.sowslider.value=self.W.sowratevalues.index(self.W.sowrate)
+        frother.add_child(self.sowslider)
 
         frcontrols.add_child(frplay)
         frcontrols.add_child(frstatus)
         frcontrols.add_child(frselbug)
+        frcontrols.add_child(frother)
 
 
         # Right frame contains the controls
@@ -290,6 +307,11 @@ class GUI:
         self.coords=c
         self.draw_board()
 
+    def _update_sowrate(self):
+        v=int(self.sowslider.value)
+        print v
+        rate=self.W.sowratevalues[v]
+        self.W.sowrate=rate
 
 if __name__ == "__main__":
     G=GUI()
