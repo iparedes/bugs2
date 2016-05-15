@@ -14,6 +14,7 @@ import bug
 import hab
 import board
 
+# ToDo add logging
 class world:
     def __init__(self):
         self.habs={}
@@ -107,7 +108,7 @@ class world:
 
     def step(self,hab):
         """
-        Steps an inhabitant
+        Steps an inhabitant. Performs interactions between bug and world
         :param hab:
         :return:
         """
@@ -172,6 +173,17 @@ class world:
                     newpos=self.new_pos(pos,i)
                     c=self.board.cell((newpos))
                     if c.has_food(diet):
+                        b.push(i)
+                        break
+                b.push(0)
+            elif op=='SRBG':
+                # Searches a near bug. Pushes the direction into the stack
+                logger.debug('SRBG '+ident)
+                # ToDo: bug sets initial position
+                for i in range(1,9):
+                    newpos=self.new_pos(pos,i)
+                    c=self.board.cell((newpos))
+                    if c.is_hab():
                         b.push(i)
                         break
                 b.push(0)

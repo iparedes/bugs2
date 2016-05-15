@@ -9,9 +9,10 @@ CODE=2
 # Index of other registers
 COMM=3
 ENER=4
-OFFS=5
-DIET=6
-SHRE=7
+MATU=5
+OFFS=6
+DIET=7
+SHRE=8
 
 
 # Number of registers. The three registers are block pointers (stack, code, heap)
@@ -51,7 +52,7 @@ OPS=['RST', # Resets the PC
      'MOV', # Sets the COMM register to MOV
      'MOVA', # Sets the COMM register to MOV AWAY
      'SRFD', # Sets the COMM register to SEARCH FOOD. Pushes direction to the stack
-     'SREY', # Sets the COMM register to SEARCH ENEMY. Pushes direction to the stack
+     'SRBG', # Sets the COMM register to SEARCH BUG. Pushes direction to the stack
      'ATK', # Attacks one bug in the same location
      'SHR', # Shares energy with bus in the same location
      'ADD', # Adds the two numbers in the stack. Stores the result in the stack

@@ -23,6 +23,7 @@ class bug:
         # 1-Stack pointer. Points to the head (top empty position) of the stack
         # 2-Program pointer. Points to the next instruction to be executed (or parameter to be read)
         self._registers[ENER]=INITENERGY
+        self._registers[MATU]=ENERGY
         self._registers[OFFS]=OFFSPRING
         self._registers[DIET]=HERB
         self._registers[SHRE]=SHARENERGY
@@ -207,6 +208,7 @@ class bug:
         Does nothing
         :return:
         """
+        self.last_executed="NOP"
         pass
 
     def _opcode_PUSH(self):
@@ -218,16 +220,19 @@ class bug:
         v=self._memory[CODE][pc]
         self._incPC()
         self._push(STACK,v)
+        self.last_executed="PUSH "+str(v)
 
     def _opcode_JMF(self):
         pc=self.PC()
         v=self._memory[CODE][pc]
         self._incPC(v)
+        self.last_executed="JFM "+str(v)
 
     def _opcode_JMB(self):
         pc=self.PC()
         v=self._memory[CODE][pc]
         self._incPC(-v)
+        self.last_executed="JMB "+str(v)
 
     def _opcode_JZ(self):
         pc=self.PC()
@@ -237,6 +242,7 @@ class bug:
         if v==0:
             address = address % MAX_MEM
             self._memory[CODE][pc]=address
+        self.last_executed="JZ "+str(v)
 
     def _opcode_JNZ(self):
         pc=self.PC()
@@ -246,43 +252,54 @@ class bug:
         if v!=0:
             address = address % MAX_MEM
             self._memory[CODE][pc]=address
+        self.last_executed="JNZ "+str(v)
 
     def _opcode_RST(self):
         self._registers[CODE]=0
+        self.last_executed="RST"
 
     def _opcode_MOV(self):
         self._registers[COMM]=OPS.index('MOV')
+        self.last_executed="MOV"
 
     def _opcode_MOVA(self):
         self._registers[COMM]=OPS.index('MOVA')
+        self.last_executed="MOVA"
 
     def _opcode_SRFD(self):
         self._registers[COMM]=OPS.index('SRFD')
+        self.last_executed="SRFD"
 
-    def _opcode_SREY(self):
-        self._registers[COMM]=OPS.index('SREY')
+    def _opcode_SRBG(self):
+        self._registers[COMM]=OPS.index('SRBG')
+        self.last_executed="SRBG"
 
     def _opcode_ATK(self):
         self._registers[COMM]=OPS.index('ATK')
+        self.last_executed="ATK"
 
     def _opcode_SHR(self):
         self._registers[SHRE]=OPS.index('SHR')
+        self.last_executed="SHR"
 
     def _opcode_ADD(self):
         v1=self._pop(STACK)
         v2=self._pop(STACK)
         self._push(STACK,v1+v2)
+        self.last_executed="ADD"
 
     def _opcode_MUL(self):
         v1=self._pop(STACK)
         v2=self._pop(STACK)
         self._push(STACK,v1*v2)
+        self.last_executed="MUL"
 
     def _opcode_DIV(self):
         v1=self._pop(STACK)
         v2=self._pop(STACK)
         if v2!=0:
             self._push(STACK,v1/v2)
+        self.last_executed="DIV"
 
     def _opcode_ST(self):
         """
@@ -296,6 +313,7 @@ class bug:
         reg = reg % NREGS
         v=self._registers[reg]
         self._push(STACK,v)
+        self.last_executed="ST "+str(v)
 
     def _opcode_LD(self):
         """
@@ -309,6 +327,7 @@ class bug:
         reg= reg % NREGS
         v=self._pop(STACK)
         self._registers[reg]=v
+        self.last_executed="LD "+str(v)
 
     def _opcode_STM(self):
         """
@@ -322,6 +341,7 @@ class bug:
         address = address % MAX_MEM
         v=self._memory[HEAP][address]
         self._push(STACK,v)
+        self.last_executed="STM "+str(v)
 
     def _opcode_LDM(self):
         """
@@ -335,6 +355,7 @@ class bug:
         address = address % MAX_MEM
         v=self._pop(STACK)
         self._memory[HEAP][address]=v
+        self.last_executed="LDM "+str(v)
 
     def _opcode_STP(self):
         """
@@ -350,6 +371,7 @@ class bug:
         pointer = pointer % MAX_MEM
         v=self._memory[HEAP][pointer]
         self._push(STACK,v)
+        self.last_executed="STP "+str(v)
 
 
     def _opcode_LDP(self):
@@ -365,6 +387,7 @@ class bug:
         pointer = pointer % MAX_MEM
         v=self._pop(STACK)
         self._memory[HEAP][pointer]=v
+        self.last_executed="LDP "+str(v)
 
 
 
@@ -435,7 +458,7 @@ class bug:
             'MOV':    self._opcode_MOV,
             'MOVA':   self._opcode_MOVA,
             'SRFD':   self._opcode_SRFD,
-            'SREY':   self._opcode_SREY,
+            'SRBG':   self._opcode_SRBG,
             'ATK':    self._opcode_ATK,
             'SHR':    self._opcode_SHR,
             'ADD':    self._opcode_ADD,
@@ -447,8 +470,9 @@ class bug:
             'JNZ':    self._opcode_JNZ,
         }.get(op,self._opcode_NOP)
         oper()
-        self.last_executed=str(op)
-        logger.debug(self.id+'('+str(self._registers[ENER])+') '+str(op))
+        #self.last_executed=str(op)
+        #logger.debug(self.id+'('+str(self._registers[ENER])+') '+str(op))
+        logger.debug(self.id+'('+str(self._registers[ENER])+') '+self.last_executed)
         self._registers[ENER]-=1
         # Age is controlled by the world
         #self.age+=1
@@ -493,7 +517,7 @@ class bug:
         If the bug's energy is above the max it is mature to procreate
         :return: true if the energy is above the max
         """
-        return self._registers[ENER]>=ENERGY
+        return self._registers[ENER]>=self._registers[MATU]
 
     def energy(self):
         """
