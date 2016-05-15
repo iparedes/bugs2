@@ -4,7 +4,8 @@ import sys
 import logging
 import pygame, os
 import codecs
-import pickle
+import datetime
+#import pickle
 from pygame.locals import *
 from ocempgui.draw import Draw
 from ocempgui.widgets import *
@@ -302,7 +303,12 @@ class GUI:
 
 
 
-    def filewindow(self):
+    def filewindow(self,item):
+        """
+        Draws a load file window for bugs and worlds
+        :param item: Determines if it is a bug or world load. Values (0:bug, 1:world)
+        :return:
+        """
         # Disables map clicks
         self.MAPENABLED=False
 
@@ -315,7 +321,10 @@ class GUI:
         dialog.depth = 1 # Make it the top window.
         #dialog.topleft = 100, 20
         #dialog.filelist.selectionmode = SELECTION_MULTIPLE
-        dialog.connect_signal (SIG_DIALOGRESPONSE, self._set_bugfiles, dialog)
+        if item==0:
+            dialog.connect_signal (SIG_DIALOGRESPONSE, self._set_bugfiles, dialog)
+        elif item==1:
+            dialog.connect_signal (SIG_DIALOGRESPONSE, self._set_worldfiles, dialog)
         return dialog
 
     def messWindow(self,message):
@@ -375,7 +384,7 @@ class GUI:
         self.W.sowrate=rate
 
     def _loadbug(self):
-        dialog=self.filewindow()
+        dialog=self.filewindow(0)
         self.re.add_widget(dialog)
         pygame.display.update()
 
@@ -387,15 +396,24 @@ class GUI:
         self.W.add_hab(B)
 
     def _loadworld(self):
-        pass
+        dialog=self.filewindow(1)
+        self.re.add_widget(dialog)
+        pygame.display.update()
+
+    def loadworld(self,filename):
+        X=world.world()
+        file=open(filename,'rb')
+        self.W=X.load(file)
+        file.close()
 
     def _savebug(self):
         if self.SELECTEDBUG!=None and self.SELECTEDBUG in self.W.habs:
             bug=self.W.habs[self.SELECTEDBUG].bug
             fname="savebugs/"+bug.id+".bug"
             f=codecs.open(fname,'wb')
-            data_stringB=pickle.dumps(bug)
-            f.write(data_stringB)
+            #data_stringB=pickle.dumps(bug)
+            bug.save(f)
+            #f.write(data_stringB)
             f.close()
             win=self.messWindow("Bug "+bug.id+" saved.")
             self.re.add_widget(win)
@@ -403,14 +421,21 @@ class GUI:
 
 
     def _saveworld(self):
-        pass
+        a=datetime.datetime.now()
+        name=a.strftime('%Y%m%d%H%M%S')
+        fname="savebugs/"+name+".world"
+        f=codecs.open(fname,'wb')
+        self.W.save(f)
+        f.close()
+        win=self.messWindow("World "+name+" saved.")
+        self.re.add_widget(win)
 
     def _close_messWindow(self,resp,dialog):
         dialog.destroy()
         self.draw_board()
         # Enables map clicks
         self.MAPENABLED=True
-        
+
     def _set_bugfiles(self,result,dialog):
         string = ""
         if result == DLGRESULT_OK:
@@ -421,6 +446,20 @@ class GUI:
         # Enables map clicks
         self.MAPENABLED=True
 
+    def _set_worldfiles(self,result,dialog):
+        string=""
+        if result == DLGRESULT_OK:
+            fname=dialog.get_filenames()[0]
+            self.loadworld(fname)
+        dialog.destroy ()
+        self.draw_board()
+        # Enables map clicks
+        self.MAPENABLED=True
 
 if __name__ == "__main__":
+    # W=world.world()
+    # filename="savebugs/20160515194356.world"
+    # file=open(filename,'rb')
+    # A=W.load(file)
+    # file.close()
     G=GUI()
