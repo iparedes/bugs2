@@ -14,7 +14,6 @@ import bug
 import hab
 import board
 
-# ToDo add logging
 class world:
     def __init__(self):
         self.habs={}
@@ -264,6 +263,7 @@ class world:
 
             self.board.cell((x,y)).grow_food()
 
+    # ToDo include configurable MUTRATE
     def mutate(self,bug):
         size=bug.size()
         average=size*MUTRATE/100
